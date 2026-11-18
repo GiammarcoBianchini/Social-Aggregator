@@ -1,0 +1,6 @@
+{ "routes": {
+  "/oauth/access_token": { "access_token": "LONG_USER", "token_type": "bearer", "expires_in": 5183944 },
+  "/114974825841062?": { "access_token": "PAGE_TOKEN", "instagram_business_account": { "id": "17841405848018774" }, "id": "114974825841062" },
+  "/debug_token": { "data": { "is_valid": true, "expires_at": 0, "scopes": ["instagram_basic", "instagram_manage_insights", "pages_show_list", "pages_read_engagement"] } },
+  "/17841405848018774?": { "username": "giammarco_bianchini_web", "id": "17841405848018774" }
+} }
