@@ -41,8 +41,10 @@ async function collectAccountDay(db: Db, day: string, http: Http, token: string)
       const results = tv.breakdowns?.[0]?.results;
       if (breakdown && results) {
         // Stored under follow_type whatever name Meta used (follow_type / follower_type).
-        for (const r of results) rows.push({ key: m.name, value: r.value, dims: { follow_type: r.dimension_values[0] } });
-      } else {
+        for (const r of results) {
+          if (typeof r.value === 'number') rows.push({ key: m.name, value: r.value, dims: { follow_type: r.dimension_values[0] } });
+        }
+      } else if (typeof tv.value === 'number') {
         rows.push({ key: m.name, value: tv.value });
       }
     }

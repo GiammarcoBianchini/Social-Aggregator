@@ -33,3 +33,21 @@ test('expired token throws AuthError', async () => {
   await expect(instagram.collectDays(openDb(':memory:'), ['2026-11-17'], fixtureHttp('ig-error-190.json', 400), tok))
     .rejects.toBeInstanceOf(AuthError);
 });
+
+test('a metric without a value is skipped, not stored, and posts are still collected', async () => {
+  const db = openDb(':memory:');
+  const http = async (u: string) => {
+    if (u.includes('metric=profile_links_taps') || u.includes('metric=accounts_engaged'))
+      return new Response(JSON.stringify({ data: [{ name: 'accounts_engaged', total_value: { value: 3 } }, { name: 'profile_links_taps', total_value: {} }] }));
+    if (u.includes('metric=views') || u.includes('metric=reach'))
+      return new Response(JSON.stringify({ data: [{ name: 'views', total_value: { value: 5, breakdowns: [{ dimension_keys: ['follow_type'], results: [
+        { dimension_values: ['FOLLOWER'], value: 5 }, { dimension_values: ['NON_FOLLOWER'] }] }] } }] }));
+    if (u.includes('/media?')) return new Response(JSON.stringify({ data: [{ id: 'p1', media_product_type: 'FEED', timestamp: '2026-11-17T10:00:00+0000' }] }));
+    if (u.includes('/p1/insights')) return new Response(JSON.stringify({ data: [{ name: 'reach', values: [{ value: 9 }] }] }));
+    return new Response(JSON.stringify({ data: [] }));
+  };
+  await instagram.collectDays(db, ['2026-11-17'], http, tok);
+  expect(db.raw.prepare("select key, value from metrics where key in ('accounts_engaged','profile_links_taps','views') order by key, value").all())
+    .toEqual([{ key: 'accounts_engaged', value: 3 }, { key: 'views', value: 5 }]);
+  expect((db.raw.prepare('select count(*) c from items').get() as any).c).toBe(1);
+});
