@@ -11,7 +11,7 @@ Progetto: Project "Giammarco Bianchini", `automazioni/hub-dati-design.md`.
    - Schermata di consenso OAuth: se lo stato è "Test", passala a "In produzione" (altrimenti l'accesso scade ogni 7 giorni).
 2. `npm ci && npm run build`
 3. `npm run login:google` — consenso nel browser; stampa le proprietà GA4 (deve esserci `516548637`) e Search Console.
-   Se la proprietà Search Console non è `sc-domain:giammarcobianchini.com`, esporta `HUB_DATI_GSC_SITE="<valore stampato>"` prima del passo 6.
+   Se la proprietà Search Console non è `https://www.giammarcobianchini.com/`, esporta `HUB_DATI_GSC_SITE="<valore stampato>"` prima del passo 6.
 4. **Meta**: crea (se non c'è) un'app su developers.facebook.com, tipo Business, modalità sviluppo, con Facebook Login.
    In Graph API Explorer scegli l'app, genera un token utente con `instagram_basic`, `instagram_manage_insights`,
    `pages_show_list`, `pages_read_engagement`.

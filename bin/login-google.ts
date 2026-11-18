@@ -42,4 +42,4 @@ console.log('Proprietà GA4 visibili:');
 for (const a of ga.data.accountSummaries ?? []) for (const p of a.propertySummaries ?? []) console.log(`  ${p.property}  ${p.displayName}`);
 console.log('Proprietà Search Console visibili:');
 for (const s of sc.data.siteEntry ?? []) console.log(`  ${s.siteUrl}  (${s.permissionLevel})`);
-console.log('\nSe la proprietà Search Console non è sc-domain:giammarcobianchini.com, imposta HUB_DATI_GSC_SITE (vedi README).');
+console.log('\nSe la proprietà Search Console non è https://www.giammarcobianchini.com/, imposta HUB_DATI_GSC_SITE (vedi README).');

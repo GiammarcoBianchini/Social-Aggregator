@@ -8,7 +8,7 @@ import { googleAccessToken } from '../google.js';
 import { getJson, type SourceModule } from './types.js';
 
 /** Confirm the exact property form at first login (domain vs URL-prefix property). */
-export const GSC_SITE = process.env.HUB_DATI_GSC_SITE ?? 'sc-domain:giammarcobianchini.com';
+export const GSC_SITE = process.env.HUB_DATI_GSC_SITE ?? 'https://www.giammarcobianchini.com/';
 const ENDPOINT = `https://searchconsole.googleapis.com/webmasters/v3/sites/${encodeURIComponent(GSC_SITE)}/searchAnalytics/query`;
 const METRICS = ['clicks', 'impressions', 'ctr', 'position'] as const;
 
