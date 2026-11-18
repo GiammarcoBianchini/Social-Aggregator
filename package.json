@@ -1,0 +1,30 @@
+{
+  "name": "hub-dati",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "test": "vitest run",
+    "collect": "node dist/bin/collect.js",
+    "mcp": "node dist/bin/mcp.js",
+    "login:google": "node dist/bin/login-google.js",
+    "login:meta": "node dist/bin/login-meta.js"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.32.2",
+    "better-sqlite3": "^13.2.0",
+    "exceljs": "^4.4.0",
+    "google-auth-library": "^11.3.4",
+    "zod": "^4.6.7"
+  },
+  "devDependencies": {
+    "@types/better-sqlite3": "^9.6.0",
+    "@types/node": "^26.6.6",
+    "typescript": "^7.0.2",
+    "vitest": "^5.1.1"
+  }
+}
