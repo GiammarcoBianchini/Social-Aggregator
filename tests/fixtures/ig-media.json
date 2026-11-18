@@ -1,0 +1,20 @@
+{ "routes": {
+  "/18119684836805248/insights": { "data": [
+    { "name": "reach", "period": "lifetime", "values": [ { "value": 302 } ] },
+    { "name": "views", "period": "lifetime", "values": [ { "value": 494 } ] },
+    { "name": "saved", "period": "lifetime", "values": [ { "value": 0 } ] },
+    { "name": "shares", "period": "lifetime", "values": [ { "value": 1 } ] },
+    { "name": "likes", "period": "lifetime", "values": [ { "value": 14 } ] },
+    { "name": "comments", "period": "lifetime", "values": [ { "value": 0 } ] },
+    { "name": "ig_reels_avg_watch_time", "period": "lifetime", "values": [ { "value": 4886 } ] },
+    { "name": "reels_skip_rate", "period": "lifetime", "values": [ { "value": 0.788 } ] } ] },
+  "/18101039564542007/insights": { "data": [
+    { "name": "reach", "period": "lifetime", "values": [ { "value": 33 } ] },
+    { "name": "views", "period": "lifetime", "values": [ { "value": 88 } ] },
+    { "name": "profile_visits", "period": "lifetime", "values": [ { "value": 1 } ] } ] },
+  "/media?": { "data": [
+    { "id": "18101039564542007", "caption": "Due preventivi", "media_type": "CAROUSEL_ALBUM", "media_product_type": "FEED",
+      "permalink": "https://www.instagram.com/p/Df2eIXQiHXc/", "timestamp": "2026-11-17T17:30:11+0000" },
+    { "id": "18119684836805248", "caption": "Ping vive in basso a destra", "media_type": "VIDEO", "media_product_type": "REELS",
+      "permalink": "https://www.instagram.com/reel/DfpAe-pjejZ/", "timestamp": "2026-11-12T12:01:36+0000" } ] }
+} }

@@ -18,3 +18,17 @@ export function daysBetween(from: string, to: string): string[] {
   for (let d = from; d <= to; d = addDays(d, 1)) out.push(d);
   return out;
 }
+
+/** Unix seconds of 00:00 Europe/Rome on `day`. */
+export function romeMidnightUnix(day: string): number {
+  const utcNoon = new Date(`${day}T12:00:00Z`);
+  const romeNoon = new Date(utcNoon.toLocaleString('en-US', { timeZone: TZ }));
+  const utcAsLocal = new Date(utcNoon.toLocaleString('en-US', { timeZone: 'UTC' }));
+  const offsetMs = romeNoon.getTime() - utcAsLocal.getTime();
+  return Math.floor((Date.parse(`${day}T00:00:00Z`) - offsetMs) / 1000);
+}
+
+/** The Europe/Rome calendar day of an ISO timestamp. */
+export function romeDay(iso: string): string {
+  return today(new Date(iso.replace(/([+-]\d{2})(\d{2})$/, '$1:$2')));
+}
