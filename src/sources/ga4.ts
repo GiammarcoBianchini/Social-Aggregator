@@ -30,8 +30,9 @@ export const ga4: SourceModule = {
           }),
         });
         const metricNames: string[] = (body.metricHeaders ?? []).map((h: any) => h.name);
+        const dimNames: string[] = (body.dimensionHeaders ?? []).map((h: any) => h.name);
         for (const row of body.rows ?? []) {
-          const d = Object.fromEntries(dims.map((name, i) => [name, row.dimensionValues[i].value]));
+          const d = Object.fromEntries(dimNames.map((name, i) => [name, row.dimensionValues?.[i]?.value ?? '']));
           metricNames.forEach((m, i) => db.upsertMetric('ga4', day, m, Number(row.metricValues[i].value), d));
         }
       }
