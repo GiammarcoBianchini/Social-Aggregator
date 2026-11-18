@@ -1,0 +1,8 @@
+{ "routes": {
+  "runReport": {
+    "dimensionHeaders": [ { "name": "sessionDefaultChannelGroup" } ],
+    "metricHeaders": [ { "name": "sessions", "type": "TYPE_INTEGER" }, { "name": "totalUsers", "type": "TYPE_INTEGER" }, { "name": "keyEvents", "type": "TYPE_FLOAT" } ],
+    "rows": [
+      { "dimensionValues": [ { "value": "Organic Social" } ], "metricValues": [ { "value": "7" }, { "value": "6" }, { "value": "1" } ] },
+      { "dimensionValues": [ { "value": "Direct" } ], "metricValues": [ { "value": "12" }, { "value": "10" }, { "value": "0" } ] } ] }
+} }
