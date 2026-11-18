@@ -8,10 +8,10 @@
  *   FEED: reach, views, saved, shares, likes, comments, profile_visits, follows
  *   REELS: reach, views, saved, shares, likes, comments, ig_reels_avg_watch_time, reels_skip_rate
  */
-import type { Db } from '../db.js';
+import type { Db, MetricRow } from '../db.js';
 import { addDays, romeDay, romeMidnightUnix } from '../days.js';
 import { getSecret } from '../secrets.js';
-import { getJson, type Http, type SourceModule } from './types.js';
+import { AuthError, getJson, type Http, type SourceModule } from './types.js';
 
 export const IG_USER_ID = '17841405848018774';
 const BASE = 'https://graph.facebook.com/v25.0';
@@ -31,24 +31,34 @@ function url(path: string, params: Record<string, string | number>): string {
 
 async function collectAccountDay(db: Db, day: string, http: Http, token: string) {
   const range = { period: 'day', metric_type: 'total_value', since: romeMidnightUnix(day), until: romeMidnightUnix(addDays(day, 1)), access_token: token };
-  const requests: Array<[string, string | null]> = [
-    ['views,reach', 'follow_type'],
-    ['accounts_engaged,profile_links_taps', null],
-    ['follows_and_unfollows', 'follow_type'],
-  ];
-  for (const [metric, breakdown] of requests) {
-    const body = await getJson(http, url(`/${IG_USER_ID}/insights`, { metric, ...range, ...(breakdown ? { breakdown } : {}) }));
+  const rows: MetricRow[] = [];
+  const fetchMetric = (metric: string, breakdown?: string) =>
+    getJson(http, url(`/${IG_USER_ID}/insights`, { metric, ...range, ...(breakdown ? { breakdown } : {}) }));
+  const store = (body: any, breakdown: boolean) => {
     for (const m of body.data ?? []) {
       const tv = m.total_value;
       if (!tv) continue;
       const results = tv.breakdowns?.[0]?.results;
       if (breakdown && results) {
-        for (const r of results) db.upsertMetric('instagram', day, m.name, r.value, { [breakdown]: r.dimension_values[0] });
+        // Stored under follow_type whatever name Meta used (follow_type / follower_type).
+        for (const r of results) rows.push({ key: m.name, value: r.value, dims: { follow_type: r.dimension_values[0] } });
       } else {
-        db.upsertMetric('instagram', day, m.name, tv.value);
+        rows.push({ key: m.name, value: tv.value });
       }
     }
+  };
+  // views and reach separately: the reference lists follow_type for reach and follower_type for views.
+  for (const metric of ['views', 'reach']) {
+    let body: any = null;
+    for (const breakdown of ['follow_type', 'follower_type']) {
+      try { body = await fetchMetric(metric, breakdown); break; } catch (e) { if (e instanceof AuthError) throw e; }
+    }
+    if (body) store(body, true);
+    else store(await fetchMetric(metric), false);
   }
+  store(await fetchMetric('accounts_engaged,profile_links_taps'), false);
+  store(await fetchMetric('follows_and_unfollows', 'follow_type'), true);
+  db.replaceDay('instagram', day, rows);
 }
 
 async function collectMedia(db: Db, firstDay: string, lastDay: string, http: Http, token: string) {
@@ -61,7 +71,14 @@ async function collectMedia(db: Db, firstDay: string, lastDay: string, http: Htt
     for (const m of page.data ?? []) {
       const isReel = m.media_product_type === 'REELS';
       const metrics = isReel ? REEL_METRICS : FEED_METRICS;
-      const ins = await getJson(http, url(`/${m.id}/insights`, { metric: metrics.join(','), access_token: token }));
+      let ins: any;
+      try {
+        ins = await getJson(http, url(`/${m.id}/insights`, { metric: metrics.join(','), access_token: token }));
+      } catch (e) {
+        if (e instanceof AuthError) throw e;
+        console.error(`Instagram: insight non disponibili per il contenuto ${m.id}: ${(e as Error).message}`);
+        continue;
+      }
       const fields: Record<string, unknown> = {
         type: m.media_product_type, media_type: m.media_type, caption: m.caption ?? '', permalink: m.permalink, timestamp: m.timestamp };
       for (const d of ins.data ?? []) fields[FIELD_NAMES[d.name] ?? d.name] = d.values?.[0]?.value ?? d.total_value?.value ?? null;

@@ -42,11 +42,11 @@ function sum(db: Db, source: Source, key: string, r: Range, dimsLike?: string): 
 }
 
 /** Impression-weighted position over rows with the given dims prefix. */
-function weightedPosition(db: Db, r: Range, dimsLike: string): number {
+function weightedPosition(db: Db, r: Range, dims: string, exact = false): number {
   const row = db.raw.prepare(`
     select sum(p.value * i.value) w, sum(i.value) n from metrics p
     join metrics i on i.source = p.source and i.day = p.day and i.dims_json = p.dims_json and i.key = 'impressions'
-    where p.source = 'gsc' and p.key = 'position' and p.day between ? and ? and p.dims_json like ?`).get(r.da, r.a, dimsLike) as { w: number | null; n: number | null };
+    where p.source = 'gsc' and p.key = 'position' and p.day between ? and ? and p.dims_json ${exact ? '=' : 'like'} ?`).get(r.da, r.a, dims) as { w: number | null; n: number | null };
   return row.n ? round(row.w! / row.n, 2) : 0;
 }
 
@@ -153,7 +153,7 @@ export function ricercaGoogle(db: Db, periodo: Periodo, per: 'query' | 'pagina' 
     group by dims_json order by clic desc, impressioni desc limit ?`).all(r.da, r.a, like, limite) as any[];
   return rows.map(({ dims_json, clic, impressioni }) => {
     const dims = JSON.parse(dims_json);
-    const pos = weightedPosition(db, r, dims_json);
+    const pos = weightedPosition(db, r, dims_json, true);
     return { ...dims, clic, impressioni, ctr: impressioni ? round(clic / impressioni) : 0, posizione: pos };
   });
 }
@@ -171,6 +171,8 @@ export function statoRaccolta(db: Db, oggi: string = today()) {
       fallimenti_consecutivi: db.recentFailures(s),
       ultimo_errore: err?.error ?? null,
       giorni_mancanti: last ? Math.max(0, daysBetween(addDays(last, 1), ieri).length) : null,
+      buchi: (db.raw.prepare("select error from runs where source = ? and error like 'buco: %' order by id").all(s) as { error: string }[])
+        .map(x => x.error.replace(/^buco: /, '').replace(/ non recuperabile$/, '')),
       ...(s === 'linkedin' ? { nota: 'Import manuale mensile' } : {}),
       ...(s === 'gbp' && !last ? { nota: 'In attesa dell\'accesso alle API di Google Business' } : {}),
     };

@@ -22,8 +22,9 @@ export async function getJson(http: Http, url: string, init?: RequestInit): Prom
   if (!res.ok) {
     const err = body?.error ?? {};
     const msg = err.message ?? err.error_description ?? body?.error_description ?? `HTTP ${res.status}`;
-    if (res.status === 401 || err.code === 190 || err.type === 'OAuthException' || body?.error === 'invalid_grant'
-        || err.status === 'UNAUTHENTICATED') {
+    // Meta: 190 invalid/expired token, 102 session, 463/467 expired/invalid subcodes. Other OAuthException codes (4, 17, 32, 100…) are not login problems.
+    if (res.status === 401 || [190, 102, 463, 467].includes(err.code) || [463, 467].includes(err.error_subcode)
+        || body?.error === 'invalid_grant' || err.status === 'UNAUTHENTICATED') {
       throw new AuthError(String(msg));
     }
     throw new Error(String(msg));

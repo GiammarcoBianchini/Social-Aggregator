@@ -30,6 +30,18 @@ beforeAll(async () => {
     'ENGAGEMENT': [['Date', 'Impressions', 'Engagements'], ['11/17/2026', 300, 12]],
     'TOP POSTS': [['Post URL', 'Post publish date', 'Impressions'], ['https://www.linkedin.com/feed/update/urn:li:activity:2', '11/17/2026', 120]],
   });
+  await book('it-text-numbers.xlsx', {
+    'INTERAZIONE': [['Data', 'Impressioni', 'Interazioni'], ['17/11/2026', '1.234', '12']],
+  });
+  await book('it-bad-number.xlsx', {
+    'INTERAZIONE': [['Data', 'Impressioni', 'Interazioni'], ['17/11/2026', 'n/d', '12']],
+  });
+  await book('it-no-dates.xlsx', {
+    'INTERAZIONE': [['Data', 'Impressioni', 'Interazioni'], ['2026-11-17', 10, 1]],
+  });
+  await book('it-eng-only.xlsx', {
+    'POST PRINCIPALI': [['URL del post', 'Data di pubblicazione del post', 'Interazioni'], ['https://www.linkedin.com/feed/update/urn:li:activity:1', '17/11/2026', 15]],
+  });
   await book('other.xlsx', { 'Foglio1': [['Nome', 'Cognome'], ['Mario', 'Rossi']] });
 });
 
@@ -52,4 +64,25 @@ test('imports English export with US dates', async () => {
 });
 test('unknown workbook gives a clear error', async () => {
   await expect(importLinkedin(openDb(':memory:'), files['other.xlsx'])).rejects.toThrow(/Non riconosco.*Foglio1/);
+});
+
+test('F9 Italian thousands separator in text cells', async () => {
+  const db = openDb(':memory:');
+  await importLinkedin(db, files['it-text-numbers.xlsx']);
+  expect(db.raw.prepare("select value from metrics where key='impressions'").get()).toEqual({ value: 1234 });
+});
+test('F9 unparseable number fails before writing anything', async () => {
+  const db = openDb(':memory:');
+  await expect(importLinkedin(db, files['it-bad-number.xlsx'])).rejects.toThrow(/non numerico/);
+  expect((db.raw.prepare('select count(*) c from metrics').get() as any).c).toBe(0);
+});
+test('F9 recognised sheet with no readable dates is an error', async () => {
+  await expect(importLinkedin(openDb(':memory:'), files['it-no-dates.xlsx'])).rejects.toThrow(/nessuna data/);
+});
+test('F10 a later export keeps fields it does not contain', async () => {
+  const db = openDb(':memory:');
+  await importLinkedin(db, files['it.xlsx']);
+  await importLinkedin(db, files['it-eng-only.xlsx']);
+  const f = JSON.parse((db.raw.prepare("select fields_json from items where source='linkedin'").get() as any).fields_json);
+  expect(f).toMatchObject({ engagements: 15, impressions: 946 });
 });

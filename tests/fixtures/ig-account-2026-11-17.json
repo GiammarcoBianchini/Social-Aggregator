@@ -1,14 +1,115 @@
-{ "routes": {
-  "metric=views%2Creach": { "data": [
-    { "name": "views", "period": "day", "total_value": { "value": 196, "breakdowns": [ { "dimension_keys": ["follow_type"], "results": [
-      { "dimension_values": ["FOLLOWER"], "value": 160 }, { "dimension_values": ["NON_FOLLOWER"], "value": 36 } ] } ] } },
-    { "name": "reach", "period": "day", "total_value": { "value": 60, "breakdowns": [ { "dimension_keys": ["follow_type"], "results": [
-      { "dimension_values": ["FOLLOWER"], "value": 55 }, { "dimension_values": ["NON_FOLLOWER"], "value": 5 } ] } ] } } ] },
-  "metric=accounts_engaged%2Cprofile_links_taps": { "data": [
-    { "name": "accounts_engaged", "period": "day", "total_value": { "value": 4 } },
-    { "name": "profile_links_taps", "period": "day", "total_value": { "value": 0 } } ] },
-  "metric=follows_and_unfollows": { "data": [
-    { "name": "follows_and_unfollows", "period": "day", "total_value": { "value": 2, "breakdowns": [ { "dimension_keys": ["follow_type"], "results": [
-      { "dimension_values": ["FOLLOWER"], "value": 2 } ] } ] } } ] },
-  "/media?": { "data": [] }
-} }
+{
+ "routes": {
+  "metric=views&": {
+   "data": [
+    {
+     "name": "views",
+     "period": "day",
+     "total_value": {
+      "value": 196,
+      "breakdowns": [
+       {
+        "dimension_keys": [
+         "follow_type"
+        ],
+        "results": [
+         {
+          "dimension_values": [
+           "FOLLOWER"
+          ],
+          "value": 160
+         },
+         {
+          "dimension_values": [
+           "NON_FOLLOWER"
+          ],
+          "value": 36
+         }
+        ]
+       }
+      ]
+     }
+    }
+   ]
+  },
+  "metric=reach&": {
+   "data": [
+    {
+     "name": "reach",
+     "period": "day",
+     "total_value": {
+      "value": 60,
+      "breakdowns": [
+       {
+        "dimension_keys": [
+         "follow_type"
+        ],
+        "results": [
+         {
+          "dimension_values": [
+           "FOLLOWER"
+          ],
+          "value": 55
+         },
+         {
+          "dimension_values": [
+           "NON_FOLLOWER"
+          ],
+          "value": 5
+         }
+        ]
+       }
+      ]
+     }
+    }
+   ]
+  },
+  "metric=accounts_engaged%2Cprofile_links_taps": {
+   "data": [
+    {
+     "name": "accounts_engaged",
+     "period": "day",
+     "total_value": {
+      "value": 4
+     }
+    },
+    {
+     "name": "profile_links_taps",
+     "period": "day",
+     "total_value": {
+      "value": 0
+     }
+    }
+   ]
+  },
+  "metric=follows_and_unfollows": {
+   "data": [
+    {
+     "name": "follows_and_unfollows",
+     "period": "day",
+     "total_value": {
+      "value": 2,
+      "breakdowns": [
+       {
+        "dimension_keys": [
+         "follow_type"
+        ],
+        "results": [
+         {
+          "dimension_values": [
+           "FOLLOWER"
+          ],
+          "value": 2
+         }
+        ]
+       }
+      ]
+     }
+    }
+   ]
+  },
+  "/media?": {
+   "data": []
+  }
+ }
+}

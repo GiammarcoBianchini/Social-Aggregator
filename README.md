@@ -17,7 +17,7 @@ Progetto: Project "Giammarco Bianchini", `automazioni/hub-dati-design.md`.
    `pages_show_list`, `pages_read_engagement`.
 5. `npm run login:meta` — incolla ID app, chiave segreta e token; deve rispondere `giammarco_bianchini_web` e "nessuna scadenza".
 6. `npm run collect` — prima raccolta (recupera fino a 30 giorni di Instagram e 14-16 mesi di GA4 e Search Console).
-7. `./scripts/install.sh` — installa la raccolta giornaliera delle 08:30 e stampa la riga da aggiungere a Claude Desktop.
+7. `./scripts/install.sh` — installa la raccolta: parte all'accensione e prova ogni ora finché quella del giorno non è completa e stampa la riga da aggiungere a Claude Desktop.
 
 Le credenziali stanno nel Portachiavi (servizio `hub-dati`), mai nel repository.
 Archivio: `~/Library/Application Support/hub-dati/hub.db`.

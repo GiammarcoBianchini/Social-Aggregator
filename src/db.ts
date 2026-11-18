@@ -4,9 +4,16 @@ import { addDays, daysBetween } from './days.js';
 
 export type Source = 'instagram' | 'ga4' | 'gsc' | 'gbp' | 'linkedin';
 
+export type MetricRow = { key: string; value: number; dims?: Record<string, string> };
+
 export interface Db {
   upsertMetric(source: Source, day: string, key: string, value: number, dims?: Record<string, string>): void;
   upsertItem(source: Source, itemId: string, publishedDay: string, fields: Record<string, unknown>): void;
+  /** Atomically replaces every metric of (source, day) with `rows`. */
+  replaceDay(source: Source, day: string, rows: MetricRow[]): void;
+  getItemFields(source: Source, itemId: string): Record<string, unknown> | null;
+  getMeta(key: string): string | null;
+  setMeta(key: string, value: string): void;
   recordRun(source: Source, day: string, ok: boolean, error?: string): void;
   lastSuccessDay(source: Source): string | null;
   recentFailures(source: Source): number;
@@ -26,6 +33,7 @@ create table if not exists runs (
   id integer primary key autoincrement, source text not null, day text not null,
   ok integer not null, error text, ran_at text not null default (datetime('now')));
 create index if not exists runs_source on runs (source, id);
+create table if not exists meta (key text primary key, value text not null);
 `;
 
 /** Stable JSON for dims: keys sorted so the same dims always produce the same key. */
@@ -53,6 +61,23 @@ export function openDb(path: string = dbPath(), options: { readonly?: boolean } 
     raw,
     upsertMetric(source, day, key, value, dims) { putMetric!.run(source, day, key, dimsKey(dims), value); },
     upsertItem(source, itemId, publishedDay, fields) { putItem!.run(source, itemId, publishedDay, JSON.stringify(fields)); },
+    replaceDay(source, day, rows) {
+      raw.transaction(() => {
+        raw.prepare('delete from metrics where source = ? and day = ?').run(source, day);
+        for (const r of rows) putMetric!.run(source, day, r.key, dimsKey(r.dims), r.value);
+      })();
+    },
+    getItemFields(source, itemId) {
+      const r = raw.prepare('select fields_json from items where source = ? and item_id = ?').get(source, itemId) as { fields_json: string } | undefined;
+      return r ? JSON.parse(r.fields_json) : null;
+    },
+    getMeta(key) {
+      const r = raw.prepare('select value from meta where key = ?').get(key) as { value: string } | undefined;
+      return r?.value ?? null;
+    },
+    setMeta(key, value) {
+      raw.prepare('insert into meta (key, value) values (?, ?) on conflict (key) do update set value = excluded.value').run(key, value);
+    },
     recordRun(source, day, ok, error) { putRun!.run(source, day, ok ? 1 : 0, error ?? null); },
     lastSuccessDay(source) {
       const r = raw.prepare('select max(day) d from runs where source = ? and ok = 1').get(source) as { d: string | null };

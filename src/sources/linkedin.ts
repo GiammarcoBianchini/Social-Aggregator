@@ -33,6 +33,17 @@ function toDay(v: unknown, lang: Lang): string | null {
   return `${y}-${String(mo).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
 }
 
+/** Numbers from cells: real numbers as they are; text with locale separators ("1.234" in Italian, "1,234" in English). */
+function toNum(v: unknown, lang: Lang, where: string): number {
+  if (typeof v === 'number') return v;
+  if (v === null || v === undefined || String(v).trim() === '') return 0;
+  let t = String(v).trim().replace(/\s/g, '');
+  t = lang === 'it' ? t.replace(/\./g, '').replace(',', '.') : t.replace(/,/g, '');
+  const n = Number(t);
+  if (!Number.isFinite(n)) throw new Error(`Valore non numerico "${v}" in ${where}: controlla il file, non ho importato niente.`);
+  return n;
+}
+
 function rows(ws: ExcelJS.Worksheet): unknown[][] {
   const out: unknown[][] = [];
   ws.eachRow({ includeEmpty: true }, (row, n) => {
@@ -56,36 +67,37 @@ function findHeader(data: unknown[][], keys: (keyof typeof H)[]) {
 export async function importLinkedin(db: Db, filePath: string): Promise<{ days: number; posts: number }> {
   const wb = new ExcelJS.Workbook();
   await wb.xlsx.readFile(filePath);
-  const days = new Set<string>();
+  const metrics: Array<{ day: string; key: string; value: number }> = [];
   const posts = new Map<string, { day: string; fields: Record<string, number> }>();
   let recognised = false;
 
   for (const ws of wb.worksheets) {
     const data = rows(ws);
+    const at = (i: number) => `foglio "${ws.name}", riga ${i + 1}`;
 
     const daily = findHeader(data, ['date', 'impressions', 'engagements']);
     if (daily && !findHeader(data, ['postUrl'])) {
       recognised = true;
       const [cd, ci, ce] = daily.cols;
-      for (const r of data.slice(daily.row + 1)) {
+      data.forEach((r, i) => {
+        if (i <= daily.row) return;
         const day = toDay(r[cd], daily.lang);
-        if (!day) continue;
-        db.upsertMetric('linkedin', day, 'impressions', Number(r[ci] ?? 0));
-        db.upsertMetric('linkedin', day, 'engagements', Number(r[ce] ?? 0));
-        days.add(day);
-      }
+        if (!day) return;
+        metrics.push({ day, key: 'impressions', value: toNum(r[ci], daily.lang, at(i)) });
+        metrics.push({ day, key: 'engagements', value: toNum(r[ce], daily.lang, at(i)) });
+      });
     }
 
     const fol = findHeader(data, ['date', 'newFollowers']);
     if (fol) {
       recognised = true;
       const [cd, cn] = fol.cols;
-      for (const r of data.slice(fol.row + 1)) {
+      data.forEach((r, i) => {
+        if (i <= fol.row) return;
         const day = toDay(r[cd], fol.lang);
-        if (!day) continue;
-        db.upsertMetric('linkedin', day, 'new_followers', Number(r[cn] ?? 0));
-        days.add(day);
-      }
+        if (!day) return;
+        metrics.push({ day, key: 'new_followers', value: toNum(r[cn], fol.lang, at(i)) });
+      });
     }
 
     const top = findHeader(data, ['postUrl', 'publishDate']);
@@ -99,14 +111,15 @@ export async function importLinkedin(db: Db, filePath: string): Promise<{ days: 
         const metricHeader = header[c + 2];
         const metric = metricHeader === H.impressions[top.lang] ? 'impressions' : metricHeader === H.engagements[top.lang] ? 'engagements' : null;
         if (!metric) return;
-        for (const r of data.slice(top.row + 1)) {
+        data.forEach((r, i) => {
+          if (i <= top.row) return;
           const url = String(r[c] ?? '').trim();
           const day = toDay(r[c + 1], top.lang);
-          if (!url || !day) continue;
+          if (!url || !day) return;
           const p = posts.get(url) ?? { day, fields: {} };
-          p.fields[metric] = Number(r[c + 2] ?? 0);
+          p.fields[metric] = toNum(r[c + 2], top.lang, at(i));
           posts.set(url, p);
-        }
+        });
       });
     }
   }
@@ -114,7 +127,17 @@ export async function importLinkedin(db: Db, filePath: string): Promise<{ days: 
   if (!recognised) {
     throw new Error(`Non riconosco questo file come export di LinkedIn. Fogli trovati: ${wb.worksheets.map(w => w.name).join(', ')}`);
   }
-  for (const [url, p] of posts) db.upsertItem('linkedin', url, p.day, { ...p.fields, url });
-  for (const d of days) db.recordRun('linkedin', d, true);
+  const days = new Set(metrics.map(m => m.day));
+  if (days.size === 0 && posts.size === 0) {
+    throw new Error('Ho riconosciuto i fogli di LinkedIn ma nessuna data leggibile (formato atteso GG/MM/AAAA o MM/DD/YYYY): non ho importato niente.');
+  }
+  db.raw.transaction(() => {
+    for (const m of metrics) db.upsertMetric('linkedin', m.day, m.key, m.value);
+    for (const [url, p] of posts) {
+      const previous = db.getItemFields('linkedin', url) ?? {};
+      db.upsertItem('linkedin', url, p.day, { ...previous, ...p.fields, url });
+    }
+    for (const d of days) db.recordRun('linkedin', d, true);
+  })();
   return { days: days.size, posts: posts.size };
 }
